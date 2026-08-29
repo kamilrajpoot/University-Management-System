@@ -1,91 +1,58 @@
-# 🎓 University Management System
+# 🎓 University Management System (C++)
 
-A console-based C++ application to manage students, faculty, and courses within a university. It supports enrollment, course assignment, and detailed record display through an interactive menu.
+A console-based University Management System built in C++ using OOP principles. It manages **Students**, **Faculty**, and **Courses**, and supports enrolling students into courses and assigning faculty to teach them.
 
----
+## Features
 
-## 📋 Features
+- Add students, faculty, and courses
+- Enroll a student into a course
+- Assign a course to a faculty member
+- Display full details of all students and faculty (including their courses)
+- Duplicate-safe: prevents duplicate IDs, course codes, enrollments, and assignments
+- Robust input handling (invalid/non-numeric input won't crash or infinite-loop the program)
 
-- Add and manage **students**, **faculty**, and **courses**
-- **Enroll students** into courses
-- **Assign courses** to faculty members
-- **Display** all student and faculty details, including enrolled/taught courses
-- Simple, interactive **menu-driven interface**
+## Tech / Concepts Used
 
----
+- Object-Oriented Programming (encapsulation, composition)
+- `std::deque` for stable pointer storage (avoids dangling pointers on reallocation)
+- Pointer-based relationships between `Student`/`Faculty` and `Course`
+- Menu-driven console interface
 
-## 🏗️ Class Structure
+## Project Structure
 
-### `Course`
-Represents a university course.
+```
+.
+├── university_management_fixed.cpp   # Main source file
+└── README.md
+```
 
-| Member | Type | Description |
-|---|---|---|
-| `courseCode` | `string` | Unique identifier for the course |
-| `courseName` | `string` | Full name of the course |
-| `creditHours` | `int` | Number of credit hours |
+## Classes
 
----
+| Class        | Responsibility                                              |
+|--------------|---------------------------------------------------------------|
+| `Course`     | Stores course code, name, and credit hours                    |
+| `Student`    | Stores student info and list of enrolled courses              |
+| `Faculty`    | Stores faculty info and list of courses taught                |
+| `University` | Manages all students, faculty, and courses; handles operations |
 
-### `Student`
-Represents a student enrolled in the university.
-
-| Member | Type | Description |
-|---|---|---|
-| `name` | `string` | Student's full name |
-| `age` | `int` | Student's age |
-| `studentId` | `int` | Unique student ID |
-| `enrolledCourses` | `vector<Course*>` | List of enrolled courses |
-
----
-
-### `Faculty`
-Represents a faculty member.
-
-| Member | Type | Description |
-|---|---|---|
-| `name` | `string` | Faculty member's full name |
-| `age` | `int` | Faculty member's age |
-| `facultyId` | `int` | Unique faculty ID |
-| `department` | `string` | Department name |
-| `coursesTaught` | `vector<Course*>` | List of courses assigned |
-
----
-
-### `University`
-The central class that manages all entities.
-
-| Method | Description |
-|---|---|
-| `addStudent()` | Registers a new student |
-| `addFaculty()` | Registers a new faculty member |
-| `addCourse()` | Adds a new course to the system |
-| `enrollStudent()` | Enrolls a student into a course by ID and course code |
-| `assignCourse()` | Assigns a course to a faculty member |
-| `displayAllDetails()` | Prints all student and faculty records |
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- A C++ compiler supporting **C++11** or later (e.g., `g++`, `clang++`)
 
-### Compilation
+- A C++ compiler supporting C++17 (e.g., `g++`, `clang++`, or MSVC)
 
-```bash
-g++ -std=c++11 -o university_system main.cpp
-```
-
-### Running
+### Compile & Run
 
 ```bash
-./university_system
+g++ -std=c++17 -Wall -o university university_management_fixed.cpp
+./university
 ```
 
----
+On Windows (MSVC), you can also just open the `.cpp` file in Visual Studio and build/run.
 
-## 🖥️ Menu Options
+## Usage
+
+Once running, you'll see a menu:
 
 ```
 ************ University Management System ************
@@ -99,61 +66,24 @@ g++ -std=c++11 -o university_system main.cpp
 ******************************************************
 ```
 
----
+Enter the number corresponding to the action you want to perform, then follow the prompts.
 
-## 📌 Usage Example
+## Known Fixes Applied
 
-```
-Enter your choice: 3
-Enter course code: CS101
-Enter course name: Introduction to Programming
-Enter credit hours: 3
-Course added successfully.
+This version resolves several issues found in the original implementation:
 
-Enter your choice: 1
-Enter student name: Alice Johnson
-Enter student age: 20
-Enter student ID: 1001
-Student added successfully.
+- **Dangling pointer bug** — courses are now stored in a `std::deque` instead of `std::vector`, so pointers to existing courses stay valid even when new courses are added.
+- **Infinite loop on bad input** — non-numeric input for menu choices or IDs is now caught and handled gracefully.
+- **Duplicate records** — adding a student/faculty/course with an ID or code that already exists is now blocked with an error message.
+- **Duplicate enrollment/assignment** — a student can't be enrolled twice in the same course, and a faculty member can't be assigned twice to the same course.
 
-Enter your choice: 4
-Enter student ID: 1001
-Enter course code: CS101
-Course enrolled successfully.
+## Possible Future Improvements
 
-Enter your choice: 6
-Student Details:
-Student Name: Alice Johnson
-Age: 20
-Student ID: 1001
-Enrolled Courses:
--------------------------------------
-Course Code: CS101
-Course Name: Introduction to Programming
-Credit Hours: 3
--------------------------------------
-```
+- Persist data to a file or database instead of in-memory storage
+- Add ability to remove/update students, faculty, or courses
+- Add course capacity limits and prerequisite checks
+- Unit tests for core University operations
 
----
+## License
 
-## ⚠️ Notes
-
-- Student IDs and Faculty IDs must be **unique integers**.
-- Course codes must be **unique strings** (e.g., `CS101`, `MATH201`).
-- If an invalid ID or course code is entered during enrollment or assignment, an error message is shown and no changes are made.
-- The application runs entirely **in-memory** — data is not persisted after the program exits.
-
----
-
-## 📁 File Structure
-
-```
-.
-└── main.cpp      # All source code (Course, Student, Faculty, University classes + main)
-```
-
----
-
-## 📄 License
-
-This project is open-source and free to use for educational purposes.
+This project is open source and available for personal or educational use.
