@@ -1,6 +1,9 @@
 #include <iostream>
 #include <vector>
+#include <deque>
 #include <string>
+#include <limits>
+#include <algorithm>
 
 using namespace std;
 
@@ -56,6 +59,17 @@ public:
         enrolledCourses.push_back(course);
     }
 
+    // FIX: Check if already enrolled in this course (prevents duplicate enrollment)
+    bool isEnrolledIn(const string& courseCode) const
+    {
+        for (const auto& course : enrolledCourses)
+        {
+            if (course->getCourseCode() == courseCode)
+                return true;
+        }
+        return false;
+    }
+
     // Display student details and their enrolled courses
     void displayDetails() const
     {
@@ -99,6 +113,17 @@ public:
         coursesTaught.push_back(course);
     }
 
+    // FIX: Check if faculty is already assigned to this course
+    bool isAssignedTo(const string& courseCode) const
+    {
+        for (const auto& course : coursesTaught)
+        {
+            if (course->getCourseCode() == courseCode)
+                return true;
+        }
+        return false;
+    }
+
     // Display faculty details and courses taught
     void displayDetails() const
     {
@@ -123,25 +148,52 @@ class University
 private:
     vector<Student> students;   // All registered students
     vector<Faculty> faculties;  // All registered faculty
-    vector<Course> courses;     // All available courses
+
+    // FIX: changed from vector<Course> to deque<Course>.
+    // A deque never invalidates pointers/references to existing elements
+    // when new elements are added (unlike vector, which may reallocate
+    // and move everything to a new memory block). This kills the
+    // dangling-pointer bug that existed in the original code.
+    deque<Course> courses;
 
 public:
     // Add new student
-    void addStudent(const string& name, int age, int studentId)
+    // FIX: returns bool + checks for duplicate student ID
+    bool addStudent(const string& name, int age, int studentId)
     {
+        if (findStudent(studentId) != nullptr)
+        {
+            cout << "Error: Student ID " << studentId << " already exists." << endl;
+            return false;
+        }
         students.emplace_back(name, age, studentId);
+        return true;
     }
 
     // Add new faculty
-    void addFaculty(const string& name, int age, int facultyId, const string& department)
+    // FIX: returns bool + checks for duplicate faculty ID
+    bool addFaculty(const string& name, int age, int facultyId, const string& department)
     {
+        if (findFaculty(facultyId) != nullptr)
+        {
+            cout << "Error: Faculty ID " << facultyId << " already exists." << endl;
+            return false;
+        }
         faculties.emplace_back(name, age, facultyId, department);
+        return true;
     }
 
     // Add new course
-    void addCourse(const string& code, const string& name, int creditHours)
+    // FIX: returns bool + checks for duplicate course code
+    bool addCourse(const string& code, const string& name, int creditHours)
     {
+        if (findCourse(code) != nullptr)
+        {
+            cout << "Error: Course code " << code << " already exists." << endl;
+            return false;
+        }
         courses.emplace_back(code, name, creditHours);
+        return true;
     }
 
     // Enroll student into a course
@@ -150,15 +202,21 @@ public:
         Student* student = findStudent(studentId);
         Course* course = findCourse(courseCode);
 
-        if (student && course)
-        {
-            student->addCourse(course);
-            cout << "Course enrolled successfully." << endl;
-        }
-        else
+        if (!student || !course)
         {
             cout << "Invalid student ID or course code." << endl;
+            return;
         }
+
+        // FIX: prevent duplicate enrollment
+        if (student->isEnrolledIn(courseCode))
+        {
+            cout << "Student is already enrolled in this course." << endl;
+            return;
+        }
+
+        student->addCourse(course);
+        cout << "Course enrolled successfully." << endl;
     }
 
     // Assign a course to faculty
@@ -167,21 +225,29 @@ public:
         Faculty* faculty = findFaculty(facultyId);
         Course* course = findCourse(courseCode);
 
-        if (faculty && course)
-        {
-            faculty->addCourseTaught(course);
-            cout << "Course assigned successfully." << endl;
-        }
-        else
+        if (!faculty || !course)
         {
             cout << "Invalid faculty ID or course code." << endl;
+            return;
         }
+
+        // FIX: prevent duplicate assignment
+        if (faculty->isAssignedTo(courseCode))
+        {
+            cout << "Faculty is already assigned to this course." << endl;
+            return;
+        }
+
+        faculty->addCourseTaught(course);
+        cout << "Course assigned successfully." << endl;
     }
 
     // Display all students and faculty details
     void displayAllDetails() const
     {
         cout << "Student Details:" << endl;
+        if (students.empty())
+            cout << "(No students registered yet)" << endl;
         for (const auto& student : students)
         {
             student.displayDetails();
@@ -189,6 +255,8 @@ public:
         }
 
         cout << "Faculty Details:" << endl;
+        if (faculties.empty())
+            cout << "(No faculty registered yet)" << endl;
         for (const auto& faculty : faculties)
         {
             faculty.displayDetails();
@@ -231,6 +299,23 @@ private:
     }
 };
 
+// FIX: helper to safely read an integer from cin.
+// If the user types a non-numeric value, this clears the error
+// state and discards the bad input instead of looping forever.
+bool readInt(int& value, const string& prompt)
+{
+    cout << prompt;
+    cin >> value;
+    if (cin.fail())
+    {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Invalid input. Please enter a number." << endl;
+        return false;
+    }
+    return true;
+}
+
 // Menu function to guide user interaction
 void displayMenu()
 {
@@ -243,7 +328,6 @@ void displayMenu()
     cout << "6. Display All Details" << endl;
     cout << "0. Exit" << endl;
     cout << "******************************************************" << endl;
-    cout << "Enter your choice: ";
 }
 
 int main()
@@ -254,7 +338,13 @@ int main()
     do
     {
         displayMenu();
-        cin >> choice;
+
+        // FIX: safe integer read for menu choice
+        if (!readInt(choice, "Enter your choice: "))
+        {
+            cout << endl;
+            continue;
+        }
 
         switch (choice)
         {
@@ -269,13 +359,12 @@ int main()
             cout << "Enter student name: ";
             cin.ignore();
             getline(cin, name);
-            cout << "Enter student age: ";
-            cin >> age;
-            cout << "Enter student ID: ";
-            cin >> studentId;
 
-            university.addStudent(name, age, studentId);
-            cout << "Student added successfully." << endl;
+            if (!readInt(age, "Enter student age: ")) break;
+            if (!readInt(studentId, "Enter student ID: ")) break;
+
+            if (university.addStudent(name, age, studentId))
+                cout << "Student added successfully." << endl;
             break;
         }
 
@@ -286,16 +375,16 @@ int main()
             cout << "Enter faculty name: ";
             cin.ignore();
             getline(cin, name);
-            cout << "Enter faculty age: ";
-            cin >> age;
-            cout << "Enter faculty ID: ";
-            cin >> facultyId;
+
+            if (!readInt(age, "Enter faculty age: ")) break;
+            if (!readInt(facultyId, "Enter faculty ID: ")) break;
+
             cout << "Enter faculty department: ";
             cin.ignore();
             getline(cin, department);
 
-            university.addFaculty(name, age, facultyId, department);
-            cout << "Faculty added successfully." << endl;
+            if (university.addFaculty(name, age, facultyId, department))
+                cout << "Faculty added successfully." << endl;
             break;
         }
 
@@ -308,11 +397,11 @@ int main()
             getline(cin, code);
             cout << "Enter course name: ";
             getline(cin, name);
-            cout << "Enter credit hours: ";
-            cin >> creditHours;
 
-            university.addCourse(code, name, creditHours);
-            cout << "Course added successfully." << endl;
+            if (!readInt(creditHours, "Enter credit hours: ")) break;
+
+            if (university.addCourse(code, name, creditHours))
+                cout << "Course added successfully." << endl;
             break;
         }
 
@@ -320,8 +409,8 @@ int main()
         {
             int studentId;
             string courseCode;
-            cout << "Enter student ID: ";
-            cin >> studentId;
+            if (!readInt(studentId, "Enter student ID: ")) break;
+
             cout << "Enter course code: ";
             cin.ignore();
             getline(cin, courseCode);
@@ -334,8 +423,8 @@ int main()
         {
             int facultyId;
             string courseCode;
-            cout << "Enter faculty ID: ";
-            cin >> facultyId;
+            if (!readInt(facultyId, "Enter faculty ID: ")) break;
+
             cout << "Enter course code: ";
             cin.ignore();
             getline(cin, courseCode);
